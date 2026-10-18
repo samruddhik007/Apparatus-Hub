@@ -3,140 +3,122 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ApparatusHub - Thane Engineering Lab Network</title>
-  <link rel="stylesheet" href="apparhub.css">
+  <title>ApparatusHub | Inter-College Lab Catalogue</title>
+  
+  <!-- Matching CSS stylesheet -->
+  <link rel="stylesheet" type="text/css" href="apparhub.css">
 </head>
 <body>
 
-  <!-- Auth Container -->
-  <div id="auth-container" class="card">
-    <h2 id="auth-title">ApparatusHub Login</h2>
-    <div class="toggle-box">
-      <button id="show-login-btn" class="active" onclick="toggleAuth('login')">Login</button>
-      <button id="show-register-btn" onclick="toggleAuth('register')">Register</button>
-    </div>
-
-    <!-- Login Form -->
-    <form id="login-form" onsubmit="handleLogin(event)">
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="login-email" required placeholder="prof@college.edu.in">
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div>
+        <h1>ApparatusHub</h1>
+        <p>Inter-College Engineering Equipment Directory — Thane</p>
       </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="login-pass" required>
-      </div>
-      <button type="submit" class="btn btn-primary">Sign In</button>
-    </form>
-
-    <!-- Registration Form -->
-    <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
-      <div class="form-group">
-        <label>Full Name</label>
-        <input type="text" id="reg-name" required placeholder="Dr. Sharma">
-      </div>
-      <div class="form-group">
-        <label>Role</label>
-        <select id="reg-role" required>
-          <option value="FACULTY">Faculty / Professor</option>
-          <option value="LAB_HELP">Lab Helper</option>
-          <option value="ADMIN">Admin (Seller / Lender)</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Institution / School (Thane Region)</label>
-        <input type="text" id="reg-inst" required placeholder="e.g., VJTI Extension Thane">
-      </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="reg-email" required>
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="reg-pass" required>
-      </div>
-      <button type="submit" class="btn btn-primary">Create Account</button>
-    </form>
-  </div>
-
-  <!-- Main Dashboard -->
-  <div id="dashboard" class="hidden">
-    <header class="navbar">
-      <h1>ApparatusHub <span>(Thane Network)</span></h1>
-      <div class="user-info">
-        <span id="user-display"></span>
-        <button onclick="handleLogout()" class="btn btn-secondary">Logout</button>
+      <div class="user-pill">
+        Prof. Samruddhi Kawatkar
       </div>
     </header>
 
-    <main class="content">
-      <div class="dashboard-actions">
-        <h2>Engineering Lab Apparatus</h2>
-        <button id="add-equip-btn" class="btn btn-success hidden" onclick="openModal('add')">+ Add Apparatus</button>
+    <!-- Filter & Search Controls (Triggers apparhub.js event listeners) -->
+    <div class="filter-bar">
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="Search Oscilloscope, UTM, Raspberry Pi..." 
+      />
+      
+      <select class="select-input">
+        <option value="">All Departments</option>
+        <option value="EXTC / Electronics">EXTC / Electronics</option>
+        <option value="Computer / IT">Computer / IT</option>
+        <option value="Mechanical">Mechanical</option>
+        <option value="Civil">Civil</option>
+      </select>
+    </div>
+
+    <!-- Equipment Grid -->
+    <div class="grid">
+      
+      <!-- Item 1 -->
+      <div class="card">
+        <div>
+          <div class="card-meta">
+            <span class="dept-badge">EXTC / Electronics</span>
+            <span class="status-badge status-available">Available</span>
+          </div>
+          <h2 class="equip-title">Cathode Ray Oscilloscope (CRO) 30MHz</h2>
+          <p class="equip-owner">A. P. Shah Institute of Technology, Thane</p>
+        </div>
+        <div class="card-footer">
+          <span style="font-size:0.85rem;">Qty: <strong>12</strong></span>
+          <form action="requestEquipment" method="POST" style="margin:0;">
+            <input type="hidden" name="equipmentId" value="101" />
+            <button type="submit" class="btn-request">Request</button>
+          </form>
+        </div>
       </div>
 
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Equipment Name</th>
-            <th>Department Lab</th>
-            <th>Specs / Range</th>
-            <th>Quantity</th>
-            <th>Status</th>
-            <th id="actions-header" class="hidden">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="apparatus-table-body">
-          <!-- Rendered dynamically -->
-        </tbody>
-      </table>
-    </main>
-  </div>
+      <!-- Item 2 -->
+      <div class="card">
+        <div>
+          <div class="card-meta">
+            <span class="dept-badge">Mechanical</span>
+            <span class="status-badge status-unavailable">In Use</span>
+          </div>
+          <h2 class="equip-title">Universal Testing Machine (UTM)</h2>
+          <p class="equip-owner">Thane Central Engineering Workshop</p>
+        </div>
+        <div class="card-footer">
+          <span style="font-size:0.85rem;">Qty: <strong>0</strong></span>
+          <button class="btn-request btn-disabled" disabled>Unavailable</button>
+        </div>
+      </div>
 
-  <!-- Modal for Create / Edit -->
-  <div id="equip-modal" class="modal hidden">
-    <div class="modal-content">
-      <h3 id="modal-title">Add New Apparatus</h3>
-      <form id="equip-form" onsubmit="handleSaveEquipment(event)">
-        <input type="hidden" id="equip-id">
-        <div class="form-group">
-          <label>Equipment Name</label>
-          <input type="text" id="equip-name" required placeholder="e.g., Digital Storage Oscilloscope">
+      <!-- Item 3 -->
+      <div class="card">
+        <div>
+          <div class="card-meta">
+            <span class="dept-badge">Computer / IT</span>
+            <span class="status-badge status-available">Available</span>
+          </div>
+          <h2 class="equip-title">Raspberry Pi 4 Model B Starter Kits</h2>
+          <p class="equip-owner">KC College of Engineering, Thane</p>
         </div>
-        <div class="form-group">
-          <label>Department Lab</label>
-          <select id="equip-dept" required>
-            <option value="Electronics & Telecomm">Electronics & Telecomm</option>
-            <option value="Electrical Engineering">Electrical Engineering</option>
-            <option value="Mechanical / Applied Mechanics">Mechanical / Applied Mechanics</option>
-            <option value="Civil Engineering">Civil Engineering</option>
-          </select>
+        <div class="card-footer">
+          <span style="font-size:0.85rem;">Qty: <strong>25</strong></span>
+          <form action="requestEquipment" method="POST" style="margin:0;">
+            <input type="hidden" name="equipmentId" value="103" />
+            <button type="submit" class="btn-request">Request</button>
+          </form>
         </div>
-        <div class="form-group">
-          <label>Specifications</label>
-          <input type="text" id="equip-specs" required placeholder="e.g., 50 MHz 2-Channel">
+      </div>
+
+      <!-- Item 4 -->
+      <div class="card">
+        <div>
+          <div class="card-meta">
+            <span class="dept-badge">Civil</span>
+            <span class="status-badge status-available">Available</span>
+          </div>
+          <h2 class="equip-title">Digital Theodolite 2" Accuracy</h2>
+          <p class="equip-owner">Vidya Polytech Lab Hub</p>
         </div>
-        <div class="form-group">
-          <label>Available Quantity</label>
-          <input type="number" id="equip-qty" min="1" required>
+        <div class="card-footer">
+          <span style="font-size:0.85rem;">Qty: <strong>4</strong></span>
+          <form action="requestEquipment" method="POST" style="margin:0;">
+            <input type="hidden" name="equipmentId" value="104" />
+            <button type="submit" class="btn-request">Request</button>
+          </form>
         </div>
-        <div class="form-group">
-          <label>Availability Status</label>
-          <select id="equip-status" required>
-            <option value="Available">Available for Lend</option>
-            <option value="Reserved">Reserved</option>
-            <option value="Under Maintenance">Under Maintenance</option>
-          </select>
-        </div>
-        <div class="modal-buttons">
-          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save to Hub</button>
-        </div>
-      </form>
+      </div>
+
     </div>
   </div>
 
-  <script src="apparhubscript.js"></script>
+  <!-- Matching JS Script -->
+  <script src="apparhub.js"></script>
 </body>
 </html>
