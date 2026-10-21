@@ -1,80 +1,73 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page import="java.util.List" %>
+<%@ page import="com.apparatushub.DiaryServlet.DiaryEntry" %>
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>A. P. Shah Institute - Equipment Diary & Order History</title>
+    <title>ApparatusHub - Equipment Diary</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: #ffffff; color: #1e293b; padding: 24px; max-width: 1100px; margin: 0 auto; }
-        
-        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 24px; }
-        h1 { font-size: 1.3rem; font-weight: 700; color: #0f172a; }
-        p { color: #64748b; font-size: 0.85rem; margin-top: 2px; }
-        .back-link { color: #2563eb; text-decoration: none; font-weight: 600; font-size: 0.88rem; }
-        
-        table { width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin-top: 16px; }
-        th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
-        th { background: #f8fafc; color: #475569; font-weight: 600; }
-        
-        .badge-owned { background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem; border: 1px solid #bbf7d0; }
-        .badge-loan { background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem; border: 1px solid #fde68a; }
-        .reason-tag { background: #f1f5f9; color: #334155; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
+        body { background-color: #faf9f6; color: #2d3142; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .card { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; }
+        .table thead { background-color: #f1f5f9; color: #334155; }
+        .btn-catalogue { border: 1px solid #cbd5e1; color: #475569; background-color: #ffffff; font-weight: 600; }
+        .btn-catalogue:hover { background-color: #f8fafc; color: #1e293b; }
+        .badge-txn { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .badge-action { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
     </style>
 </head>
 <body>
-
-    <header>
-        <div>
-            <h1>Equipment Register & Transaction Diary</h1>
-            <p>A. P. Shah Institute of Technology — Official Lab Log</p>
+    <div class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-1" style="color: #1e293b;">Equipment Requisition Diary</h3>
+                <p class="text-muted small mb-0">Live MySQL Transaction Logs</p>
+            </div>
+            <a href="catalogue" class="btn btn-catalogue px-4 py-2">Back to Catalogue</a>
         </div>
-        <a href="catalogue" class="back-link">← Return to Catalogue</a>
-    </header>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Txn ID</th>
-                <th>Apparatus Details</th>
-                <th>Source / Vendor</th>
-                <th>Assigned Lab</th>
-                <th>Requisition Purpose</th>
-                <th>Date Logged</th>
-                <th>Ownership Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            <c:choose>
-                <c:when test="${empty transactionLog}">
-                    <tr>
-                        <td colspan="7" style="text-align: center; color: #94a3b8; padding: 30px;">No transaction records logged yet.</td>
-                    </tr>
-                </c:when>
-                <c:otherwise>
-                    <c:forEach var="tx" items="${transactionLog}">
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table align-middle mb-0">
+                    <thead>
                         <tr>
-                            <td><strong>${tx.transactionId}</strong></td>
-                            <td>
-                                <strong>${tx.itemName}</strong><br>
-                                <span style="font-size:0.75rem; color:#64748b;">ID: ${tx.itemId}</span>
-                            </td>
-                            <td>${tx.vendorOrRenter}</td>
-                            <td>${tx.department}</td>
-                            <td><span class="reason-tag">${tx.reason}</span></td>
-                            <td>${tx.date}</td>
-                            <td>
-                                <span class="${tx.actionType == 'Rent' ? 'badge-loan' : 'badge-owned'}">
-                                    ${tx.actionType == 'Rent' ? 'Needed / Active Loan' : 'Already Owned'}
-                                </span>
-                            </td>
+                            <th class="ps-4">Txn ID</th>
+                            <th>Item ID</th>
+                            <th>Item Name</th>
+                            <th>Action</th>
+                            <th>Requisitioner</th>
+                            <th>Department</th>
+                            <th class="pe-4">Date</th>
                         </tr>
-                    </c:forEach>
-                </c:otherwise>
-            </c:choose>
-        </tbody>
-    </table>
-
+                    </thead>
+                    <tbody>
+                        <%
+                            List<DiaryEntry> entries = (List<DiaryEntry>) request.getAttribute("diaryEntries");
+                            if (entries != null && !entries.isEmpty()) {
+                                for (DiaryEntry entry : entries) {
+                        %>
+                        <tr>
+                            <td class="ps-4"><span class="badge badge-txn"><%= entry.getTransactionId() %></span></td>
+                            <td class="text-secondary small"><%= entry.getItemId() %></td>
+                            <td class="fw-bold" style="color: #0f172a;"><%= entry.getItemName() %></td>
+                            <td><span class="badge badge-action"><%= entry.getActionType() %></span></td>
+                            <td><%= entry.getFacultyName() %></td>
+                            <td class="text-secondary"><%= entry.getDepartment() %></td>
+                            <td class="pe-4 text-muted small"><%= entry.getCreatedDate() %></td>
+                        </tr>
+                        <%
+                                }
+                            } else {
+                        %>
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">No transactions logged yet. Click "Buy Now" on any item in the catalogue to log a entry.</td>
+                        </tr>
+                        <%
+                            }
+                        %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

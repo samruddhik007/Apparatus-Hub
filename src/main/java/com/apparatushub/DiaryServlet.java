@@ -6,129 +6,126 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-@WebServlet("/diary")
+@WebServlet(urlPatterns = {"/diary", "/diary-transaction"})
 public class DiaryServlet extends HttpServlet {
 
-    public static class Transaction {
+    private static final String JDBC_URL = "jdbc:mysql://localhost:3306/apparatushub?useSSL=false&allowPublicKeyRetrieval=true";
+    private static final String JDBC_USER = "root";
+    private static final String JDBC_PASSWORD = "Samruddhi123";
+
+    public static class DiaryEntry {
         private String transactionId;
         private String itemId;
         private String itemName;
         private String actionType;
-        private String vendorOrRenter;
-        private String condition;
         private String facultyName;
         private String department;
-        private String reason;
-        private String date;
+        private String createdDate;
 
-        public Transaction(String transactionId, String itemId, String itemName, String actionType, 
-                           String vendorOrRenter, String condition, String facultyName, 
-                           String department, String reason, String date) {
+        public DiaryEntry(String transactionId, String itemId, String itemName, String actionType, String facultyName, String department, String createdDate) {
             this.transactionId = transactionId;
             this.itemId = itemId;
             this.itemName = itemName;
             this.actionType = actionType;
-            this.vendorOrRenter = vendorOrRenter;
-            this.condition = condition;
             this.facultyName = facultyName;
             this.department = department;
-            this.reason = reason;
-            this.date = date;
+            this.createdDate = createdDate;
         }
 
         public String getTransactionId() { return transactionId; }
         public String getItemId() { return itemId; }
         public String getItemName() { return itemName; }
         public String getActionType() { return actionType; }
-        public String getVendorOrRenter() { return vendorOrRenter; }
-        public String getCondition() { return condition; }
         public String getFacultyName() { return facultyName; }
         public String getDepartment() { return department; }
-        public String getReason() { return reason; }
-        public String getDate() { return date; }
-    }
-
-    private static final List<Transaction> transactionLog = new ArrayList<>();
-
-    static {
-        transactionLog.add(new Transaction("TXN-1001", "APP-101", "8086 Microprocessor Kit", "Rent", 
-                "KC College of Engineering", "Available", "Samruddhi Kawatkar | A2 | 72", 
-                "Microprocessor Lab", "Urgent for Practical Exams", "2026-10-18"));
-        
-        transactionLog.add(new Transaction("TXN-1002", "APP-102", "Digital Oscilloscope 100MHz", "Buy", 
-                "Thane Electronics Local", "Available", "Samruddhi Kawatkar | A2 | 72", 
-                "Basic Electrical & EDC Lab", "Lab Equipment Replacement", "2026-10-19"));
-
-        transactionLog.add(new Transaction("TXN-1003", "APP-110", "Vernier Caliper 0-150mm", "Buy", 
-                "Thane Precision Tools", "Available", "Samruddhi Kawatkar | A2 | 72", 
-                "Applied Mechanics Workshop", "Stock Acquisition", "2026-10-20"));
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-
-        String isCart = request.getParameter("isCartCheckout");
-        String facultyName = request.getParameter("userName");
-        String department = request.getParameter("department");
-        String reason = request.getParameter("reason");
-        String today = LocalDate.now().toString();
-
-        if ("true".equals(isCart)) {
-            String cartData = request.getParameter("cartData");
-            if (cartData != null && !cartData.trim().isEmpty()) {
-                String cleanData = cartData.replace("[", "").replace("]", "").replace("\"", "");
-                String[] items = cleanData.split("(?<=\\}),(?=\\{)");
-                
-                for (String itemStr : items) {
-                    String clean = itemStr.replace("{", "").replace("}", "");
-                    String[] fields = clean.split(",");
-                    String id = "APP-GEN";
-                    String name = "Equipment Item";
-                    String type = "Buy";
-                    String vendor = "Thane Supplier";
-
-                    for (String f : fields) {
-                        String[] kv = f.split(":");
-                        if (kv.length == 2) {
-                            String k = kv[0].trim();
-                            String v = kv[1].trim();
-                            if ("id".equals(k)) id = v;
-                            if ("name".equals(k)) name = v;
-                            if ("type".equals(k)) type = v;
-                            if ("vendor".equals(k)) vendor = v;
-                        }
-                    }
-                    String txId = "TXN-" + (1000 + transactionLog.size() + 1);
-                    transactionLog.add(0, new Transaction(txId, id, name, type, vendor, "Available", facultyName, department, reason, today));
-                }
-            }
-        } else {
-            String itemId = request.getParameter("itemId");
-            String itemName = request.getParameter("itemName");
-            String actionType = request.getParameter("actionType");
-            String vendor = request.getParameter("vendorOrRenter");
-            String condition = request.getParameter("condition");
-
-            String txId = "TXN-" + (1000 + transactionLog.size() + 1);
-            if (itemName != null && !itemName.trim().isEmpty()) {
-                transactionLog.add(0, new Transaction(txId, itemId, itemName, actionType, vendor, 
-                        condition != null ? condition : "Available", facultyName, department, reason, today));
-            }
-        }
-
-        response.sendRedirect(request.getContextPath() + "/diary");
+        public String getCreatedDate() { return createdDate; }
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
 
-        request.setAttribute("transactionLog", transactionLog);
+        List<DiaryEntry> entries = new ArrayList<>();
+        String sql = "SELECT * FROM equipment_diary ORDER BY id DESC";
+
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                entries.add(new DiaryEntry(
+                    rs.getString("transaction_id"),
+                    rs.getString("item_id"),
+                    rs.getString("item_name"),
+                    rs.getString("action_type"),
+                    rs.getString("faculty_name"),
+                    rs.getString("department"),
+                    rs.getString("created_date")
+                ));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        request.setAttribute("diaryEntries", entries);
         request.getRequestDispatcher("/diary.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+
+        String itemId = request.getParameter("itemId");
+        String itemName = request.getParameter("itemName");
+        String actionType = request.getParameter("actionType");
+        String vendor = request.getParameter("vendorOrRenter");
+        String facultyName = request.getParameter("userName");
+        String department = request.getParameter("department");
+        String reason = request.getParameter("reason");
+        String today = LocalDate.now().toString();
+
+        String insertDiarySql = "INSERT INTO equipment_diary (transaction_id, item_id, item_name, action_type, vendor_or_renter, item_condition, faculty_name, department, reason, created_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String updateStockSql = "UPDATE catalogue_inventory SET quantity = quantity - 1 WHERE item_id = ? AND quantity > 0";
+
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) {
+            conn.setAutoCommit(false);
+
+            long count = 1001;
+            try (Statement s = conn.createStatement(); ResultSet rs = s.executeQuery("SELECT COUNT(*) FROM equipment_diary")) {
+                if (rs.next()) count += rs.getInt(1);
+            }
+
+            // 1. Insert into equipment_diary
+            try (PreparedStatement stmt = conn.prepareStatement(insertDiarySql)) {
+                stmt.setString(1, "TXN-" + count);
+                stmt.setString(2, itemId);
+                stmt.setString(3, itemName);
+                stmt.setString(4, actionType);
+                stmt.setString(5, vendor);
+                stmt.setString(6, "Available");
+                stmt.setString(7, facultyName);
+                stmt.setString(8, department);
+                stmt.setString(9, reason);
+                stmt.setString(10, today);
+                stmt.executeUpdate();
+            }
+
+            // 2. Decrement inventory stock
+            try (PreparedStatement stmt = conn.prepareStatement(updateStockSql)) {
+                stmt.setString(1, itemId);
+                stmt.executeUpdate();
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        response.sendRedirect(request.getContextPath() + "/diary");
     }
 }
